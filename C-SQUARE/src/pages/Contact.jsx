@@ -1,66 +1,82 @@
-mport React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageCircle, FileText, Headphones } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState } from "react";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  MessageCircle,
+  FileText,
+  Headphones,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    subject: '',
-    message: '',
+    name: "",
+    email: "",
+    company: "",
+    subject: "",
+    message: "",
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    console.log("Form submitted:", formData);
     // Handle form submission logic here
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const contactInfo = [
     {
       icon: Mail,
-      title: 'Email',
-      value: 'hello@carbonledger.com',
-      description: 'Send us an email and we\'ll respond within 24 hours',
+      title: "Email",
+      value: "hello@carbonledger.com",
+      description: "Send us an email and we'll respond within 24 hours",
     },
     {
       icon: Phone,
-      title: 'Phone',
-      value: '+1 (555) 123-4567',
-      description: 'Available Monday to Friday, 9 AM to 6 PM EST',
+      title: "Phone",
+      value: "+1 (555) 123-4567",
+      description: "Available Monday to Friday, 9 AM to 6 PM EST",
     },
     {
       icon: MapPin,
-      title: 'Office',
-      value: 'San Francisco, CA',
-      description: 'Visit our headquarters in the heart of the city',
+      title: "Office",
+      value: "San Francisco, CA",
+      description: "Visit our headquarters in the heart of the city",
     },
   ];
 
   const supportTypes = [
     {
       icon: MessageCircle,
-      title: 'General Inquiry',
-      description: 'Questions about our platform, pricing, or getting started',
+      title: "General Inquiry",
+      description: "Questions about our platform, pricing, or getting started",
     },
     {
       icon: FileText,
-      title: 'Project Verification',
-      description: 'Submit your environmental project for carbon credit verification',
+      title: "Project Verification",
+      description:
+        "Submit your environmental project for carbon credit verification",
     },
     {
       icon: Headphones,
-      title: 'Technical Support',
-      description: 'Help with platform features, integrations, or technical issues',
+      title: "Technical Support",
+      description:
+        "Help with platform features, integrations, or technical issues",
     },
   ];
 
@@ -70,8 +86,8 @@ const Contact = () => {
         <div className="text-center mb-12">
           <h1 className="text-section-title mb-6">Get in Touch</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Have questions about carbon credits, need help with verification, 
-            or want to learn more about our platform? We're here to help.
+            Have questions about carbon credits, need help with verification, or
+            want to learn more about our platform? We're here to help.
           </p>
         </div>
 
@@ -95,7 +111,9 @@ const Contact = () => {
                       <Input
                         required
                         value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                         placeholder="Your full name"
                       />
                     </div>
@@ -107,7 +125,9 @@ const Contact = () => {
                         type="email"
                         required
                         value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
                         placeholder="your.email@company.com"
                       />
                     </div>
@@ -119,7 +139,9 @@ const Contact = () => {
                     </label>
                     <Input
                       value={formData.company}
-                      onChange={(e) => handleInputChange('company', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("company", e.target.value)
+                      }
                       placeholder="Your company name (optional)"
                     />
                   </div>
@@ -128,15 +150,25 @@ const Contact = () => {
                     <label className="block text-sm font-medium mb-2">
                       Subject *
                     </label>
-                    <Select onValueChange={(value) => handleInputChange('subject', value)}>
+                    <Select
+                      onValueChange={(value) =>
+                        handleInputChange("subject", value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="What can we help you with?" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="general">General Inquiry</SelectItem>
-                        <SelectItem value="verification">Project Verification</SelectItem>
-                        <SelectItem value="technical">Technical Support</SelectItem>
-                        <SelectItem value="partnership">Partnership Opportunity</SelectItem>
+                        <SelectItem value="verification">
+                          Project Verification
+                        </SelectItem>
+                        <SelectItem value="technical">
+                          Technical Support
+                        </SelectItem>
+                        <SelectItem value="partnership">
+                          Partnership Opportunity
+                        </SelectItem>
                         <SelectItem value="press">Press & Media</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
@@ -151,7 +183,9 @@ const Contact = () => {
                       required
                       rows={5}
                       value={formData.message}
-                      onChange={(e) => handleInputChange('message', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("message", e.target.value)
+                      }
                       placeholder="Tell us more about how we can help you..."
                     />
                   </div>
@@ -162,7 +196,7 @@ const Contact = () => {
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center">
-                    By submitting this form, you agree to our privacy policy. 
+                    By submitting this form, you agree to our privacy policy.
                     We'll respond within 24 hours.
                   </p>
                 </form>
@@ -174,7 +208,9 @@ const Contact = () => {
           <div className="space-y-6">
             {/* Contact Methods */}
             <div className="space-y-4">
-              <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Contact Information
+              </h2>
               {contactInfo.map((info, index) => (
                 <Card key={index} className="card-feature">
                   <CardContent className="p-6">
@@ -183,9 +219,15 @@ const Contact = () => {
                         <info.icon className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg mb-1">{info.title}</h3>
-                        <div className="text-primary font-medium mb-2">{info.value}</div>
-                        <p className="text-sm text-muted-foreground">{info.description}</p>
+                        <h3 className="font-semibold text-lg mb-1">
+                          {info.title}
+                        </h3>
+                        <div className="text-primary font-medium mb-2">
+                          {info.value}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {info.description}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -206,7 +248,9 @@ const Contact = () => {
                         </div>
                         <div>
                           <h4 className="font-medium mb-1">{type.title}</h4>
-                          <p className="text-sm text-muted-foreground">{type.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {type.description}
+                          </p>
                         </div>
                       </div>
                     </CardContent>
@@ -224,7 +268,10 @@ const Contact = () => {
                 <p className="text-accent-foreground/80 mb-4">
                   Check out our comprehensive documentation and FAQ section.
                 </p>
-                <Button variant="outline" className="border-accent-foreground/20 hover:bg-accent-foreground/10">
+                <Button
+                  variant="outline"
+                  className="border-accent-foreground/20 hover:bg-accent-foreground/10"
+                >
                   View Documentation
                 </Button>
               </CardContent>
@@ -252,8 +299,8 @@ const Contact = () => {
                 </div>
                 <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                   <p className="text-xs text-muted-foreground">
-                    For urgent technical issues outside business hours, 
-                    please email us and we'll respond as soon as possible.
+                    For urgent technical issues outside business hours, please
+                    email us and we'll respond as soon as possible.
                   </p>
                 </div>
               </CardContent>
