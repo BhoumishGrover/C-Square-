@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github, Linkedin, Twitter, Mail } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useTheme } from '../contexts/ThemeContext';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 const Footer = () => {
   const { toggleTheme } = useTheme();
@@ -35,7 +35,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-card border-t border-border">
+    <footer className="mt-auto bg-card border-t border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Section */}

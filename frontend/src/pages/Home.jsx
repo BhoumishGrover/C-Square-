@@ -1,9 +1,8 @@
- 
-import { Link } from 'react-router-dom';
+ import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Globe, Coins, Recycle, Leaf, Users, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import heroImage from '@/assets/hero-bg.jpg';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import heroImage from '../assets/hero-bg.jpg';
 
 const Home = () => {
   const features = [
