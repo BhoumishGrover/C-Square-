@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, Upload, Trash2, FileText, TrendingUp, Leaf, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 
 const Dashboard = () => {
-  const [userType] = useState<'buyer' | 'verifier'>('buyer'); // For demo, switch to 'verifier' to see verifier view
+  const [userType] = useState('buyer');
 
   // Sample data for charts
   const monthlyOffsets = [

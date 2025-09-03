@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Search, QrCode, Download, Eye, CheckCircle, Clock, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,7 +87,7 @@ const Explorer = () => {
     },
   ];
 
-  const getTransactionIcon = (type: string) => {
+  const getTransactionIcon = (type) => {
     switch (type) {
       case 'mint':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -100,7 +100,7 @@ const Explorer = () => {
     }
   };
 
-  const getTransactionColor = (type: string) => {
+  const getTransactionColor = (type) => {
     switch (type) {
       case 'mint':
         return 'bg-green-100 text-green-800';
