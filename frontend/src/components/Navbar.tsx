@@ -1,9 +1,9 @@
-mport React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Github, Linkedin, Twitter, Mail } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useTheme } from '../contexts/ThemeContext';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 const Footer = () => {
   const { toggleTheme } = useTheme();
