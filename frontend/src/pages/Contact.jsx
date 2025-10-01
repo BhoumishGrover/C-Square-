@@ -29,20 +29,20 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email',
-      value: 'hello@carbonledger.com',
+      value: 'info@squasre.co.in',
       description: 'Send us an email and we\'ll respond within 24 hours',
     },
     {
       icon: Phone,
       title: 'Phone',
-      value: '+1 (555) 123-4567',
-      description: 'Available Monday to Friday, 9 AM to 6 PM EST',
+      value: '+91 8369919600',
+      description: 'Available Monday to Friday, 9 AM to 6 PM IST',
     },
     {
       icon: MapPin,
       title: 'Office',
-      value: 'San Francisco, CA',
-      description: 'Visit our headquarters in the heart of the city',
+      value: 'Mumbai, India',
+      description: 'Visit us in the heart of the city',
     },
   ];
 
