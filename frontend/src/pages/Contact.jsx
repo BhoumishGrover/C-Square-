@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { apiRequest } from '../lib/api';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -14,11 +15,31 @@ const Contact = () => {
     subject: '',
     message: '',
   });
+  const [status, setStatus] = useState({ state: 'idle', message: '' });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission logic here
+    if (status.state === 'loading') return;
+
+    setStatus({ state: 'loading', message: '' });
+
+    try {
+      await apiRequest('/contact', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+      setFormData({
+        name: '',
+        email: '',
+        company: '',
+        subject: '',
+        message: '',
+      });
+      setStatus({ state: 'success', message: 'Thanks! We will get back to you within one business day.' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to send your message. Please try again.';
+      setStatus({ state: 'error', message });
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -128,17 +149,20 @@ const Contact = () => {
                     <label className="block text-sm font-medium mb-2">
                       Subject *
                     </label>
-                    <Select onValueChange={(value) => handleInputChange('subject', value)}>
+                    <Select
+                      value={formData.subject}
+                      onValueChange={(value) => handleInputChange('subject', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="What can we help you with?" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">General Inquiry</SelectItem>
-                        <SelectItem value="verification">Project Verification</SelectItem>
-                        <SelectItem value="technical">Technical Support</SelectItem>
-                        <SelectItem value="partnership">Partnership Opportunity</SelectItem>
-                        <SelectItem value="press">Press & Media</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="General Inquiry">General Inquiry</SelectItem>
+                        <SelectItem value="Project Verification">Project Verification</SelectItem>
+                        <SelectItem value="Technical Support">Technical Support</SelectItem>
+                        <SelectItem value="Partnership Opportunity">Partnership Opportunity</SelectItem>
+                        <SelectItem value="Press & Media">Press & Media</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -156,9 +180,24 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full btn-hero">
+                  {status.message && (
+                    <div
+                      className={`text-sm text-center ${
+                        status.state === 'error' ? 'text-red-500' : 'text-green-600'
+                      }`}
+                    >
+                      {status.message}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full btn-hero"
+                    disabled={status.state === 'loading'}
+                  >
                     <Send className="h-4 w-4 mr-2" />
-                    Send Message
+                    {status.state === 'loading' ? 'Sending...' : 'Send Message'}
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center">

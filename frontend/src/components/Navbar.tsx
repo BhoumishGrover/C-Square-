@@ -16,6 +16,7 @@ const Navbar = () => {
     { name: 'Explorer', href: '/explorer' },
     { name: 'Docs', href: '/docs' },
     { name: 'Contact', href: '/contact' },
+    { name: 'Login', href: '/login' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
