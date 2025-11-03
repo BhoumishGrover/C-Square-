@@ -21,12 +21,34 @@ const clientOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
-app.use(
-  cors({
-    origin: clientOrigins,
-    credentials: true,
-  }),
-)
+const vercelHostPattern = /\.vercel\.app$/i
+
+const corsOptions = {
+  credentials: true,
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true)
+    }
+
+    if (clientOrigins.includes(origin)) {
+      return callback(null, true)
+    }
+
+    try {
+      const { hostname } = new URL(origin)
+      if (vercelHostPattern.test(hostname)) {
+        return callback(null, true)
+      }
+    } catch (err) {
+      console.warn('CORS origin parse error:', origin, err.message)
+    }
+
+    console.warn(`CORS blocked origin: ${origin}`)
+    return callback(new Error('Not allowed by CORS'))
+  },
+}
+
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use(cookieParser())
 const googleAuthConfigured = configureGoogleStrategy()
