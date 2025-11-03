@@ -31,13 +31,13 @@ const corsOptions = {
     }
 
     if (clientOrigins.includes(origin)) {
-      return callback(null, origin)
+      return callback(null, true)
     }
 
     try {
       const { hostname } = new URL(origin)
       if (vercelHostPattern.test(hostname)) {
-        return callback(null, origin)
+        return callback(null, true)
       }
     } catch (err) {
       console.warn('CORS origin parse error:', origin, err.message)
@@ -46,6 +46,7 @@ const corsOptions = {
     console.warn(`CORS blocked origin: ${origin}`)
     return callback(new Error('Not allowed by CORS'))
   },
+  optionsSuccessStatus: 200,
 }
 
 app.use(cors(corsOptions))
