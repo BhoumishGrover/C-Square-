@@ -93,4 +93,10 @@ export const fetchSellerCompanies = () =>
 export const fetchCompanyProjects = (companyId) =>
   adminRequest(`/companies/${companyId}/projects`)
 
+export const purchaseProject = (projectId, payload) =>
+  apiRequest(`/projects/${projectId}/purchase`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
 export const getAuthBaseUrl = () => AUTH_BASE_URL

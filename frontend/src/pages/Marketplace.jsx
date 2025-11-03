@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Filter, MapPin, Leaf, Sun, Wind } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { apiRequest } from '../lib/api';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { apiRequest, purchaseProject } from '../lib/api';
 
 const iconByType = {
   'Forest Protection': Leaf,
@@ -15,7 +15,6 @@ const iconByType = {
 };
 
 const Marketplace = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState('all');
@@ -23,25 +22,72 @@ const Marketplace = () => {
   const [filters, setFilters] = useState({ projectTypes: [], countries: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [purchaseAmount, setPurchaseAmount] = useState('');
+  const [purchaseStatus, setPurchaseStatus] = useState({ type: 'idle', message: '' });
+
+  const fetchMarketplace = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await apiRequest('/marketplace');
+      setListings(response.listings || []);
+      setFilters(response.filters || { projectTypes: [], countries: [] });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to load marketplace data.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchMarketplace = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await apiRequest('/marketplace');
-        setListings(response.listings || []);
-        setFilters(response.filters || { projectTypes: [], countries: [] });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to load marketplace data.';
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMarketplace();
-  }, []);
+  }, [fetchMarketplace]);
+
+  const openPurchaseDialog = (project) => {
+    setSelectedProject(project);
+    setPurchaseAmount('');
+    setPurchaseStatus({ type: 'idle', message: '' });
+    setPurchaseOpen(true);
+  };
+
+  const closePurchaseDialog = () => {
+    setPurchaseOpen(false);
+    setSelectedProject(null);
+    setPurchaseAmount('');
+  };
+
+  const handlePurchase = async (event) => {
+    event.preventDefault();
+    if (!selectedProject) return;
+
+    const parsedAmount = Number(purchaseAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0.1) {
+      setPurchaseStatus({ type: 'error', message: 'Enter at least 0.1 tons.' });
+      return;
+    }
+    if (parsedAmount - Number(selectedProject.tonsAvailable || 0) > 1e-6) {
+      setPurchaseStatus({
+        type: 'error',
+        message: `Maximum available is ${selectedProject.tonsAvailable} tons.`,
+      });
+      return;
+    }
+
+    try {
+      await purchaseProject(selectedProject.projectId || selectedProject.id, {
+        tons: parsedAmount,
+      });
+      setPurchaseStatus({ type: 'success', message: 'Purchase completed.' });
+      await fetchMarketplace();
+      closePurchaseDialog();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to complete purchase right now.';
+      setPurchaseStatus({ type: 'error', message });
+    }
+  };
 
   const filteredListings = useMemo(() => {
     if (!listings) return [];
@@ -205,13 +251,19 @@ const Marketplace = () => {
                           <p className="text-xs text-muted-foreground/80">ID: {listing.companyId}</p>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        className="btn-accent"
-                        onClick={() => navigate('/marketplace/stillworking')}
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex flex-col items-end gap-2">
+                        <Button
+                          size="sm"
+                          className="btn-accent"
+                          onClick={() => openPurchaseDialog(listing)}
+                          disabled={Number(listing.tonsAvailable) <= 0}
+                        >
+                          {Number(listing.tonsAvailable) > 0 ? 'Buy Credits' : 'Sold Out'}
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          Project ID: {listing.projectId}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -220,6 +272,67 @@ const Marketplace = () => {
           </div>
         )}
       </div>
+      <Dialog open={purchaseOpen} onOpenChange={(open) => (open ? setPurchaseOpen(true) : closePurchaseDialog())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Purchase Carbon Credits</DialogTitle>
+            <DialogDescription>
+              {selectedProject
+                ? `Buying from ${selectedProject.projectName} (${selectedProject.companyName}).`
+                : 'Select a project to purchase credits.'}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedProject && (
+            <form onSubmit={handlePurchase} className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                <div>
+                  <span className="text-muted-foreground/80">Available</span>
+                  <p className="font-medium">{selectedProject.tonsAvailable} tons</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/80">Price per ton</span>
+                  <p className="font-medium">${selectedProject.pricePerTonUsd}</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Tons to purchase</label>
+                <Input
+                  type="number"
+                  required
+                  min={0.1}
+                  step={0.1}
+                  max={selectedProject.tonsAvailable}
+                  value={purchaseAmount}
+                  onChange={(event) => setPurchaseAmount(event.target.value)}
+                />
+              </div>
+
+              {purchaseStatus.message && (
+                <p
+                  className={`text-sm ${
+                    purchaseStatus.type === 'error'
+                      ? 'text-red-500'
+                      : purchaseStatus.type === 'success'
+                        ? 'text-green-500'
+                        : 'text-muted-foreground'
+                  }`}
+                >
+                  {purchaseStatus.message}
+                </p>
+              )}
+
+              <DialogFooter className="flex items-center gap-2">
+                <Button type="button" variant="outline" onClick={closePurchaseDialog}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="btn-accent">
+                  Confirm Purchase
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

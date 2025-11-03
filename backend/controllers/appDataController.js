@@ -18,7 +18,9 @@ const toPlainObject = (doc) => {
   return plain
 }
 
-const buildMonthlyOffsets = (transactions = []) => {
+const YEAR_IN_MS = 365 * 24 * 60 * 60 * 1000
+
+const buildMonthlyOffsetsFromRetirements = (transactions = []) => {
   const retirements = transactions.filter((t) => t.transactionType === 'retire')
   const grouped = retirements.reduce((acc, tx) => {
     const occurredAt = tx.occurredAt ? new Date(tx.occurredAt) : null
@@ -46,6 +48,90 @@ const buildMonthlyOffsets = (transactions = []) => {
   })
 }
 
+const buildMonthlyOffsetsFromPurchases = (credits = []) => {
+  const grouped = credits.reduce((acc, credit) => {
+    if (!credit.purchaseDate) {
+      return acc
+    }
+    const purchaseDate = new Date(credit.purchaseDate)
+    if (Number.isNaN(purchaseDate.getTime())) {
+      return acc
+    }
+    const key = `${purchaseDate.getUTCFullYear()}-${purchaseDate.getUTCMonth()}`
+    const label = formatMonth(purchaseDate)
+    if (!acc[key]) {
+      acc[key] = { month: label, tons: 0 }
+    }
+    acc[key].tons += Number(credit.tons || 0)
+    return acc
+  }, {})
+
+  return Object.values(grouped).sort((a, b) => {
+    const [aMonth, aYear] = a.month.split(' ')
+    const [bMonth, bYear] = b.month.split(' ')
+    const aIndex = monthLabels.indexOf(aMonth)
+    const bIndex = monthLabels.indexOf(bMonth)
+    if (Number(aYear) === Number(bYear)) {
+      return aIndex - bIndex
+    }
+    return Number(aYear) - Number(bYear)
+  })
+}
+
+const resolveMonthlyOffsets = (transactions = [], purchasedCredits = []) => {
+  const fromRetirements = buildMonthlyOffsetsFromRetirements(transactions)
+  if (fromRetirements.length > 0) {
+    return fromRetirements
+  }
+  return buildMonthlyOffsetsFromPurchases(purchasedCredits)
+}
+
+const processPurchasedCredits = (purchasedCredits = []) => {
+  const now = Date.now()
+
+  let totalPurchased = 0
+  let activeCredits = 0
+  let retiredCredits = 0
+
+  const formatted = purchasedCredits
+    .map((credit) => {
+      const tons = Number(credit.tons || 0)
+      const purchaseDate = credit.purchaseDate ? new Date(credit.purchaseDate) : null
+      const purchaseMs = purchaseDate?.getTime()
+      const autoRetired =
+        Number.isFinite(purchaseMs) && purchaseMs <= now - YEAR_IN_MS && tons > 0
+      const status = autoRetired ? 'retired' : credit.status || 'active'
+
+      totalPurchased += tons
+      if (status === 'retired') {
+        retiredCredits += tons
+      } else {
+        activeCredits += tons
+      }
+
+      return {
+        projectName: credit.projectName,
+        projectType: credit.projectType,
+        tons,
+        pricePerTonUsd: Number(credit.pricePerTonUsd || 0),
+        purchaseDate: credit.purchaseDate,
+        status,
+        tokenId: credit.tokenId,
+        verifier: credit.verifier,
+      }
+    })
+    .sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate))
+
+  return {
+    credits: formatted,
+    totals: {
+      totalPurchased,
+      activeCredits,
+      retiredCredits,
+    },
+  }
+}
+
 const buildOffsetsByType = (purchasedCredits = []) => {
   const grouped = purchasedCredits.reduce((acc, credit) => {
     if (!credit?.projectType) {
@@ -58,20 +144,6 @@ const buildOffsetsByType = (purchasedCredits = []) => {
 
   return Object.entries(grouped).map(([name, value]) => ({ name, value }))
 }
-
-const formatPurchasedCredits = (purchasedCredits = []) =>
-  purchasedCredits
-    .map((credit) => ({
-      projectName: credit.projectName,
-      projectType: credit.projectType,
-      tons: credit.tons,
-      pricePerTonUsd: credit.pricePerTonUsd,
-      purchaseDate: credit.purchaseDate,
-      status: credit.status,
-      tokenId: credit.tokenId,
-      verifier: credit.verifier,
-    }))
-    .sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate))
 
 const formatRetirements = (records = [], company) =>
   records
@@ -157,11 +229,23 @@ export const getCompanyDashboard = async (req, res) => {
     }
 
     const company = toPlainObject(companyDoc)
-    const monthlyOffsets = buildMonthlyOffsets(company.transactions)
-    const offsetsByType = buildOffsetsByType(company.purchasedCredits)
-    const purchasedCredits = formatPurchasedCredits(company.purchasedCredits)
+    const { credits: purchasedCredits, totals } = processPurchasedCredits(
+      company.purchasedCredits,
+    )
+    const monthlyOffsets = resolveMonthlyOffsets(company.transactions, purchasedCredits)
+    const offsetsByType = buildOffsetsByType(purchasedCredits)
     const retirementRecords = formatRetirements(company.retirementRecords, company)
     const transactions = formatTransactions(company.transactions)
+
+    const investedUsd = Number(company.metrics?.totalInvestedUsd ?? 0)
+    company.metrics = {
+      ...company.metrics,
+      totalCo2OffsetTons: Number(totals.totalPurchased.toFixed(3)),
+      activeCredits: Number(totals.activeCredits.toFixed(3)),
+      retiredCredits: Number(totals.retiredCredits.toFixed(3)),
+      totalInvestedUsd: Number(investedUsd.toFixed(2)),
+    }
+    company.purchasedCredits = purchasedCredits
 
     res.json({
       company,
@@ -186,12 +270,14 @@ export const getMarketplaceListings = async (_req, res) => {
     const projectTypes = new Set()
     const countries = new Set()
 
-    const listings = projects.map((project) => {
-      if (project.projectType) {
-        projectTypes.add(project.projectType)
-      }
-      if (project.country) {
-        countries.add(project.country)
+    const listings = projects
+      .filter((project) => Number(project.tonsAvailable || 0) > 0)
+      .map((project) => {
+        if (project.projectType) {
+          projectTypes.add(project.projectType)
+        }
+        if (project.country) {
+          countries.add(project.country)
       }
       const seller = project.sellerCompany || {}
       return {
@@ -212,7 +298,7 @@ export const getMarketplaceListings = async (_req, res) => {
         description: project.description,
         imageUrl: project.listingImageUrl,
       }
-    })
+      })
 
     res.json({
       listings,

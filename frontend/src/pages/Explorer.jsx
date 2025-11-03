@@ -258,13 +258,16 @@ const Explorer = () => {
                           <span>{tx.amountTons} tons</span>
                           {tx.companyName && (
                             <span>
-                              By {tx.companyName}
+                              Logged by {tx.companyName}
                               {tx.companyId && (
                                 <span className="text-xs text-muted-foreground/80 ml-1">
                                   ({tx.companyId})
                                 </span>
                               )}
                             </span>
+                          )}
+                          {tx.to && (
+                            <span>Current holder: {tx.to}</span>
                           )}
                           <span>{formatDate(tx.occurredAt)}</span>
                         </div>

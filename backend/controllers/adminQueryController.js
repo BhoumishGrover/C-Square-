@@ -18,7 +18,9 @@ export const listCompanyProjects = async (req, res) => {
   const { companyId } = req.params
   try {
     const projects = await Project.find({ sellerCompanyId: companyId })
-      .select('projectId name status projectType tonsAvailable pricePerTonUsd')
+      .select(
+        'projectId name status projectType tonsAvailable pricePerTonUsd description country region location totalCredits soldCredits verifierRegistry listingImageUrl'
+      )
       .lean()
 
     return res.json({ projects })
