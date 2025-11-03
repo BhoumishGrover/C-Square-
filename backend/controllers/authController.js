@@ -8,10 +8,12 @@ const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'csquare_session'
 const SESSION_COOKIE_DAYS = Number.parseInt(process.env.SESSION_COOKIE_DAYS || '7', 10)
 const SESSION_MAX_AGE = SESSION_COOKIE_DAYS * 24 * 60 * 60 * 1000
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
   maxAge: SESSION_MAX_AGE,
   path: '/',
 }

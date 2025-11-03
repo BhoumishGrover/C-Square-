@@ -11,8 +11,18 @@ import {
 
 const router = Router()
 
+const resolveClientBase = () => {
+  const raw = process.env.CLIENT_URL || 'http://localhost:5173'
+  const [firstOrigin] = raw
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  return firstOrigin || 'http://localhost:5173'
+}
+
 const buildClientRedirect = (company, token) => {
-  const clientBase = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientBase = resolveClientBase()
   const url = new URL('/auth/callback', clientBase)
   url.searchParams.set('token', token)
   url.searchParams.set('companyId', company.companyId)
