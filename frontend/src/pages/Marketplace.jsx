@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, MapPin, Leaf, Sun, Wind } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -14,6 +15,7 @@ const iconByType = {
 };
 
 const Marketplace = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCountry, setSelectedCountry] = useState('all');
@@ -203,7 +205,11 @@ const Marketplace = () => {
                           <p className="text-xs text-muted-foreground/80">ID: {listing.companyId}</p>
                         )}
                       </div>
-                      <Button size="sm" className="btn-accent">
+                      <Button
+                        size="sm"
+                        className="btn-accent"
+                        onClick={() => navigate('/marketplace/stillworking')}
+                      >
                         View Details
                       </Button>
                     </div>

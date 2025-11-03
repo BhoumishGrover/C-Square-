@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -17,17 +18,78 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
-import { apiRequest } from '../lib/api';
+import { apiRequest, fetchSession } from '../lib/api';
 
 const DEFAULT_COMPANY_SLUG = 'ecotech-corp';
 
 const Dashboard = () => {
-  const [companySlug] = useState(DEFAULT_COMPANY_SLUG);
+  const [companySlug, setCompanySlug] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('csquare_company_slug') || DEFAULT_COMPANY_SLUG;
+    }
+    return DEFAULT_COMPANY_SLUG;
+  });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [requiresAuth, setRequiresAuth] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const ensureCompanySlug = async () => {
+      if (typeof window === 'undefined') return;
+      const storedSlug = localStorage.getItem('csquare_company_slug');
+      if (storedSlug) {
+        setCompanySlug(storedSlug);
+        setRequiresAuth(false);
+        return;
+      }
+
+      try {
+        const session = await fetchSession();
+        if (!session?.company || cancelled) {
+          setRequiresAuth(true);
+          return;
+        }
+        const { company } = session;
+        if (company.slug) {
+          localStorage.setItem('csquare_company_slug', company.slug);
+          setCompanySlug(company.slug);
+        }
+        if (company.companyId) {
+          localStorage.setItem('csquare_company_id', company.companyId);
+        }
+        if (company.name) {
+          localStorage.setItem('csquare_company_name', company.name);
+        }
+        if (company.authProvider) {
+          localStorage.setItem('csquare_auth_provider', company.authProvider);
+        }
+        if (company.role) {
+          localStorage.setItem('csquare_role', company.role);
+        }
+        setRequiresAuth(false);
+      } catch (err) {
+        if (!cancelled) {
+          setRequiresAuth(true);
+        }
+      }
+    };
+
+    ensureCompanySlug();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!companySlug || requiresAuth) {
+      setLoading(false);
+      return;
+    }
+
     const fetchDashboard = async () => {
       setLoading(true);
       setError('');
@@ -37,14 +99,22 @@ const Dashboard = () => {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : 'Unable to load dashboard data right now.';
-        setError(message);
+        if (
+          message.toLowerCase().includes('missing authentication') ||
+          message.toLowerCase().includes('not authenticated')
+        ) {
+          setRequiresAuth(true);
+          setData(null);
+        } else {
+          setError(message);
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboard();
-  }, [companySlug]);
+  }, [companySlug, requiresAuth]);
 
   const company = data?.company;
   const metrics = company?.metrics;
@@ -69,6 +139,29 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (requiresAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="max-w-md w-full card-elegant text-center space-y-4 p-8">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-semibold">Sign in required</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Log in to access your company dashboard, track offsets, and manage credits.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button asChild size="lg" className="w-full btn-hero">
+              <Link to="/login">Go to Login</Link>
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Need an account? Use your organization email to create one, or continue with Google.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -256,7 +349,7 @@ const Dashboard = () => {
     </div>
   );
 
-  const VerifierDashboard = () => (
+  const SellerDashboard = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="card-elegant">
@@ -396,17 +489,17 @@ const Dashboard = () => {
         </header>
 
         <Tabs defaultValue={userType} className="space-y-6">
-          <TabsList className="w-full md:w-auto">
-            <TabsTrigger value="buyer">Buyer View</TabsTrigger>
-            <TabsTrigger value="verifier">Verifier View</TabsTrigger>
-          </TabsList>
+        <TabsList className="w-full md:w-auto">
+          <TabsTrigger value="buyer">Buyer View</TabsTrigger>
+          <TabsTrigger value="seller">Seller View</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="buyer">
-            <BuyerDashboard />
-          </TabsContent>
-          <TabsContent value="verifier">
-            <VerifierDashboard />
-          </TabsContent>
+        <TabsContent value="buyer">
+          <BuyerDashboard />
+        </TabsContent>
+        <TabsContent value="seller">
+          <SellerDashboard />
+        </TabsContent>
         </Tabs>
 
         <Card className="card-elegant">

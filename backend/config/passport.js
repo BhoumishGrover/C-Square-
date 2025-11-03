@@ -64,6 +64,9 @@ export const configureGoogleStrategy = () => {
               contactEmail: email,
               googleId: profile.id,
               googlePicture: extractPhoto(profile),
+              loginEmail: email,
+              authProvider: 'google',
+              role: 'company',
             })
           } else {
             let shouldSave = false
@@ -73,6 +76,10 @@ export const configureGoogleStrategy = () => {
             }
             if (email && !company.contactEmail) {
               company.contactEmail = email
+              shouldSave = true
+            }
+            if (email && !company.loginEmail) {
+              company.loginEmail = email
               shouldSave = true
             }
             const photo = extractPhoto(profile)
@@ -91,6 +98,14 @@ export const configureGoogleStrategy = () => {
             }
             if (!company.companyId) {
               company.companyId = randomUUID()
+              shouldSave = true
+            }
+            if (company.authProvider !== 'google') {
+              company.authProvider = 'google'
+              shouldSave = true
+            }
+            if (!company.role) {
+              company.role = 'company'
               shouldSave = true
             }
             if (shouldSave) {

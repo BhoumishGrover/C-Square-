@@ -1,4 +1,5 @@
 import Company from '../models/company.model.js'
+import Project from '../models/project.model.js'
 
 const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -123,7 +124,14 @@ export const getCompanies = async (req, res) => {
 export const getCompanyBySlug = async (req, res) => {
   try {
     const { slug } = req.params
-    const company = await Company.findOne({ slug }).lean()
+    const baseQuery = req.user?.role === 'admin' ? {} : { companyId: req.user?.companyId }
+
+    let company = await Company.findOne({ ...baseQuery, slug }).populate('projects').lean()
+    if (!company) {
+      company = await Company.findOne({ ...baseQuery, companyId: slug })
+        .populate('projects')
+        .lean()
+    }
     if (!company) {
       return res.status(404).json({ error: 'Company not found' })
     }
@@ -137,7 +145,13 @@ export const getCompanyBySlug = async (req, res) => {
 export const getCompanyDashboard = async (req, res) => {
   try {
     const { slug } = req.params
-    const companyDoc = await Company.findOne({ slug }).lean()
+    const baseQuery = req.user?.role === 'admin' ? {} : { companyId: req.user?.companyId }
+    let companyDoc = await Company.findOne({ ...baseQuery, slug }).populate('projects').lean()
+    if (!companyDoc) {
+      companyDoc = await Company.findOne({ ...baseQuery, companyId: slug })
+        .populate('projects')
+        .lean()
+    }
     if (!companyDoc) {
       return res.status(404).json({ error: 'Company not found' })
     }
@@ -165,42 +179,39 @@ export const getCompanyDashboard = async (req, res) => {
 
 export const getMarketplaceListings = async (_req, res) => {
   try {
-    const companies = await Company.find({ type: { $in: ['verifier', 'both'] } })
-      .select('companyId name slug projects badges country googlePicture')
+    const projects = await Project.find({ status: 'active' })
+      .populate('sellerCompany', 'companyId name slug country googlePicture badges')
       .lean()
 
-    const listings = []
     const projectTypes = new Set()
     const countries = new Set()
 
-    companies.forEach((company) => {
-      (company.projects || []).forEach((project, index) => {
-        if (project.status && project.status.toLowerCase() !== 'active') {
-          return
-        }
+    const listings = projects.map((project) => {
+      if (project.projectType) {
         projectTypes.add(project.projectType)
-        if (project.country) {
-          countries.add(project.country)
-        }
-
-        listings.push({
-          id: `${company.slug}-${index}`,
-          companyId: company.companyId || company._id?.toString(),
-          companyName: company.name,
-          companySlug: company.slug,
-          projectName: project.name,
-          projectType: project.projectType,
-          country: project.country,
-          region: project.region,
-          location: project.location,
-          tonsAvailable: project.tonsAvailable,
-          pricePerTonUsd: project.pricePerTonUsd,
-          verifierRegistry: project.verifierRegistry,
-          vintage: project.vintage,
-          description: project.description,
-          imageUrl: project.listingImageUrl,
-        })
-      })
+      }
+      if (project.country) {
+        countries.add(project.country)
+      }
+      const seller = project.sellerCompany || {}
+      return {
+        id: project.projectId || project._id.toString(),
+        companyId: seller.companyId || seller._id?.toString(),
+        companyName: seller.name,
+        companySlug: seller.slug,
+        projectId: project.projectId,
+        projectName: project.name,
+        projectType: project.projectType,
+        country: project.country,
+        region: project.region,
+        location: project.location,
+        tonsAvailable: project.tonsAvailable,
+        pricePerTonUsd: project.pricePerTonUsd,
+        verifierRegistry: project.verifierRegistry,
+        vintage: project.vintage,
+        description: project.description,
+        imageUrl: project.listingImageUrl,
+      }
     })
 
     res.json({

@@ -48,33 +48,6 @@ const retirementRecordSchema = new Schema({
   ipfsHash: { type: String, trim: true },
 }, { _id: false, timestamps: false });
 
-const carbonProjectSchema = new Schema({
-  name: { type: String, required: true, trim: true },
-  description: { type: String },
-  projectType: {
-    type: String,
-    required: true,
-    enum: ['Forest Protection', 'Renewable Energy', 'Carbon Capture', 'Other'],
-  },
-  country: { type: String, trim: true },
-  region: { type: String, trim: true },
-  location: { type: String, trim: true },
-  totalCredits: { type: Number, min: 0 },
-  soldCredits: { type: Number, min: 0 },
-  tonsAvailable: { type: Number, min: 0 },
-  pricePerTonUsd: { type: Number, min: 0 },
-  vintage: { type: String, trim: true },
-  status: {
-    type: String,
-    enum: ['active', 'inactive', 'retired', 'draft'],
-    default: 'active',
-    set: (value) => value?.toLowerCase(),
-  },
-  verifierRegistry: { type: String, trim: true },
-  listingImageUrl: { type: String, trim: true },
-  addedDate: { type: Date },
-}, { _id: false, timestamps: false });
-
 const carbonTransactionSchema = new Schema({
   transactionType: {
     type: String,
@@ -98,7 +71,7 @@ const companySchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum: ['buyer', 'verifier', 'both'],
+    enum: ['buyer', 'seller'],
   },
   walletAddress: { type: String, trim: true },
   contactEmail: { type: String, trim: true, lowercase: true },
@@ -111,14 +84,35 @@ const companySchema = new Schema({
   verifierMetrics: { type: verifierMetricsSchema, default: () => ({}) },
   purchasedCredits: { type: [purchasedCreditSchema], default: [] },
   retirementRecords: { type: [retirementRecordSchema], default: [] },
-  projects: { type: [carbonProjectSchema], default: [] },
+  projects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
+  linkedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Project' }],
   transactions: { type: [carbonTransactionSchema], default: [] },
   googleId: { type: String, unique: true, sparse: true },
   googlePicture: { type: String, trim: true },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local',
+  },
+  role: {
+    type: String,
+    enum: ['company', 'admin'],
+    default: 'company',
+  },
+  loginEmail: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    unique: true,
+    sparse: true,
+  },
+  passwordHash: {
+    type: String,
+    select: false,
+  },
 }, { timestamps: true });
 
 companySchema.index({ type: 1 });
-companySchema.index({ 'projects.projectType': 1 });
 companySchema.index({ 'purchasedCredits.tokenId': 1 });
 
 companySchema.pre('save', function ensureCompanyId(next) {
@@ -127,5 +121,8 @@ companySchema.pre('save', function ensureCompanyId(next) {
   }
   next();
 });
+
+companySchema.path('projects').default(() => []);
+companySchema.path('linkedProjects').default(() => []);
 
 export default mongoose.models.Company || mongoose.model('Company', companySchema);
