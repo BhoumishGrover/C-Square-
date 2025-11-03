@@ -31,13 +31,13 @@ const corsOptions = {
     }
 
     if (clientOrigins.includes(origin)) {
-      return callback(null, true)
+      return callback(null, origin)
     }
 
     try {
       const { hostname } = new URL(origin)
       if (vercelHostPattern.test(hostname)) {
-        return callback(null, true)
+        return callback(null, origin)
       }
     } catch (err) {
       console.warn('CORS origin parse error:', origin, err.message)
